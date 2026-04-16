@@ -447,21 +447,39 @@ async function connectProxy() {
   }
 }
 
-async function fetchProxy(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  const json = await res.json();
-  if (!json.ok) throw new Error(json.error || 'El script devolvió un error');
-  G.rows = json.data.acciones || [];
-  G.mode = 'live';
-  G.lastSync = new Date();
-  setDot('on', 'live · ' + G.lastSync.toLocaleTimeString('es-PE'));
-  document.getElementById('LUP').textContent =
-    'Datos en tiempo real desde Google Sheets · ' + G.rows.length + ' acciones · ' +
-    G.lastSync.toLocaleString('es-PE');
-  renderAll();
-  // Auto-refresh cada 3 minutos
-  setTimeout(()=>{ if(G.mode==='live') fetchProxy(G.proxyUrl).catch(()=>{}); }, 180000);
+function fetchProxy(url) {
+  return new Promise(function(resolve, reject) {
+    var cbName = 'sofia_cb_' + Date.now();
+    var script = document.createElement('script');
+    var sep = url.includes('?') ? '&' : '?';
+    script.src = url + sep + 'callback=' + cbName;
+    var timer = setTimeout(function() {
+      cleanup(); reject(new Error('Tiempo agotado — verifica la URL y permisos'));
+    }, 10000);
+    script.onerror = function() {
+      cleanup(); reject(new Error('No se pudo cargar el script'));
+    };
+    function cleanup() {
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      clearTimeout(timer);
+    }
+    window[cbName] = function(json) {
+      cleanup();
+      if (!json.ok) { reject(new Error(json.error || 'Error del script')); return; }
+      G.rows = json.data.acciones || [];
+      G.mode = 'live';
+      G.lastSync = new Date();
+      setDot('on', 'live · ' + G.lastSync.toLocaleTimeString('es-PE'));
+      document.getElementById('LUP').textContent =
+        'Datos en tiempo real · ' + G.rows.length + ' acciones · ' +
+        G.lastSync.toLocaleString('es-PE');
+      renderAll();
+      setTimeout(function() { if(G.mode==='live') fetchProxy(G.proxyUrl).catch(function(){}); }, 180000);
+      resolve();
+    };
+    document.head.appendChild(script);
+  });
 }
 
 async function refresh() {
