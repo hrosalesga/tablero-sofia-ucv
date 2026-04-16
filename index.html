@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Tablero SOFÍA — UCV</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --ink:#0f1923;--ink-mid:#3a4a5c;--ink-soft:#6b7f94;--ink-ghost:#b8c9d8;
+  --paper:#f4f6f9;--white:#ffffff;
+  --acc:#1d5fa8;--acc2:#0e9e6e;--acc3:#e07b2a;--acc4:#c0392b;
+  --A:#0e9e6e;--Abg:#e6f8f2;--B:#1d5fa8;--Bbg:#e8f0fb;
+  --C:#e07b2a;--Cbg:#fdf2e6;--D:#c0392b;--Dbg:#fde8e6;--SV:#6b7f94;--SVbg:#f0f3f6;
+  --r:12px;--rs:8px;--sh:0 2px 12px rgba(15,25,35,.08);--shm:0 6px 24px rgba(15,25,35,.13);
+  --tr:.18s cubic-bezier(.4,0,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);font-size:14px;line-height:1.6}
+.tb{background:var(--ink);color:#fff;padding:0 28px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.tb-l{display:flex;align-items:center;gap:14px}
+.logo{width:30px;height:30px;background:var(--acc);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#fff}
+.tb-title{font-size:15px;font-weight:500;letter-spacing:-.2px}
+.tb-sub{font-size:11px;color:var(--ink-ghost);font-family:'DM Mono',monospace}
+.tb-r{display:flex;align-items:center;gap:10px}
+.sync{display:flex;align-items:center;gap:6px;font-size:11px;font-family:'DM Mono',monospace;color:var(--ink-ghost)}
+.dot{width:7px;height:7px;border-radius:50%;background:#4ade80;animation:pulse 2s infinite}
+.dot.off{background:#ef4444;animation:none}
+.dot.demo{background:#f59e0b;animation:none}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+.btn-sm{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:5px 12px;border-radius:var(--rs);font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:var(--tr)}
+.btn-sm:hover{background:rgba(255,255,255,.18)}
+/* SETUP */
+.overlay{position:fixed;inset:0;background:rgba(15,25,35,.72);backdrop-filter:blur(6px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+.setup-card{background:#fff;border-radius:var(--r);padding:36px;width:100%;max-width:560px;box-shadow:var(--shm)}
+.setup-card h2{font-size:18px;font-weight:600;margin-bottom:6px}
+.setup-card>p{font-size:13px;color:var(--ink-soft);margin-bottom:18px;line-height:1.7}
+.steps{background:var(--paper);border-radius:var(--rs);padding:14px 18px;margin-bottom:18px;font-size:12px;color:var(--ink-mid);line-height:2.2}
+.steps strong{color:var(--ink)}
+.steps code{font-family:'DM Mono',monospace;background:rgba(29,95,168,.1);color:var(--acc);padding:1px 6px;border-radius:3px;font-size:11px}
+.steps .step-num{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--acc);color:#fff;font-size:10px;font-weight:600;margin-right:4px;flex-shrink:0}
+.ig{margin-bottom:14px}
+.ig label{display:block;font-size:12px;font-weight:500;color:var(--ink-mid);margin-bottom:5px;letter-spacing:.2px}
+.ig label span{font-size:10px;color:var(--ink-ghost);font-weight:400;margin-left:4px}
+.ig input{width:100%;padding:9px 12px;border:1.5px solid var(--ink-ghost);border-radius:var(--rs);font-size:13px;font-family:'DM Mono',monospace;color:var(--ink);transition:var(--tr);background:#fff}
+.ig input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px rgba(29,95,168,.1)}
+.ig input::placeholder{color:var(--ink-ghost)}
+.btn-p{width:100%;background:var(--acc);color:#fff;border:none;padding:11px;border-radius:var(--rs);font-size:14px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;transition:var(--tr);margin-bottom:8px}
+.btn-p:hover{background:#174f8f}
+.btn-p:disabled{opacity:.5;cursor:not-allowed}
+.btn-d{width:100%;background:transparent;color:var(--ink-soft);border:1.5px solid var(--ink-ghost);padding:9px;border-radius:var(--rs);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:var(--tr)}
+.btn-d:hover{border-color:var(--ink-mid);color:var(--ink-mid)}
+.err-box{background:var(--Dbg);color:var(--D);border-radius:var(--rs);padding:9px 12px;font-size:12px;margin-bottom:12px;display:none;line-height:1.6}
+.ok-box{background:var(--Abg);color:var(--A);border-radius:var(--rs);padding:9px 12px;font-size:12px;margin-bottom:12px;display:none}
+.divider{border:none;border-top:1px solid #eef2f7;margin:14px 0}
+/* TABS */
+.tabs{background:#fff;border-bottom:1px solid #e8edf2;padding:0 28px;display:flex;gap:2px}
+.tab{padding:13px 16px;font-size:13px;font-weight:500;color:var(--ink-soft);cursor:pointer;border-bottom:2px solid transparent;transition:var(--tr);white-space:nowrap}
+.tab:hover{color:var(--ink)}.tab.on{color:var(--acc);border-bottom-color:var(--acc)}
+/* MAIN */
+.main{padding:24px 28px;max-width:1360px;margin:0 auto}
+.page{display:none}.page.on{display:block}
+.lup{font-size:11px;font-family:'DM Mono',monospace;color:var(--ink-ghost);text-align:right;margin-bottom:12px}
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border-radius:var(--r);padding:16px 18px;box-shadow:var(--sh);border-top:3px solid transparent}
+.kpi.crit{border-top-color:var(--D)}.kpi.ni{border-top-color:var(--SV)}
+.kpi.ee{border-top-color:var(--C)}.kpi.enc{border-top-color:var(--B)}.kpi.comp{border-top-color:var(--A)}
+.kpi-lbl{font-size:10px;font-weight:500;color:var(--ink-soft);letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px}
+.kpi-val{font-size:30px;font-weight:600;line-height:1}
+.kpi.crit .kpi-val{color:var(--D)}.kpi.ni .kpi-val{color:var(--SV)}
+.kpi.ee .kpi-val{color:var(--C)}.kpi.enc .kpi-val{color:var(--B)}.kpi.comp .kpi-val{color:var(--A)}
+.kpi-sub{font-size:10px;color:var(--ink-ghost);margin-top:4px}
+/* CARD */
+.card{background:#fff;border-radius:var(--r);padding:20px 22px;box-shadow:var(--sh)}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-t{font-size:13px;font-weight:600;color:var(--ink)}
+.card-b{font-size:10px;font-family:'DM Mono',monospace;background:var(--paper);color:var(--ink-soft);padding:2px 8px;border-radius:20px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.g3{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
+/* PROGRESS */
+.prog-row{display:grid;grid-template-columns:150px 1fr 72px;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #f0f3f6}
+.prog-row:last-child{border-bottom:none}
+.prog-std{font-size:11px;font-weight:500;color:var(--ink-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog-bw{background:#eef2f7;border-radius:20px;height:7px;overflow:hidden}
+.prog-b{height:100%;border-radius:20px;transition:width .6s}
+.prog-pct{font-size:10px;font-family:'DM Mono',monospace;color:var(--ink-soft);text-align:right}
+/* PDCA */
+.pdca-leg{display:flex;flex-direction:column;gap:7px;margin-top:12px}
+.pdca-it{display:flex;align-items:center;gap:9px}
+.pdca-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.pdca-nm{font-size:12px;color:var(--ink-mid);flex:1}
+.pdca-ct{font-size:12px;font-family:'DM Mono',monospace;color:var(--ink-soft)}
+/* STD GRID */
+.std-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.std-card{background:#fff;border-radius:var(--r);padding:14px;box-shadow:var(--sh);cursor:pointer;transition:var(--tr);border:2px solid transparent}
+.std-card:hover{transform:translateY(-2px);box-shadow:var(--shm)}.std-card.sel{border-color:var(--acc)}
+.std-n{font-size:10px;font-family:'DM Mono',monospace;color:var(--ink-ghost);margin-bottom:3px}
+.std-name{font-size:11px;font-weight:600;color:var(--ink);line-height:1.4;margin-bottom:8px}
+.nbadge{display:inline-flex;align-items:center;font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;font-family:'DM Mono',monospace}
+.nA{background:var(--Abg);color:var(--A)}.nB{background:var(--Bbg);color:var(--B)}
+.nC{background:var(--Cbg);color:var(--C)}.nD{background:var(--Dbg);color:var(--D)}.nSV{background:var(--SVbg);color:var(--SV)}
+.std-pb-w{background:#eef2f7;border-radius:20px;height:4px;overflow:hidden;margin-top:6px}
+.std-pb-f{height:100%;border-radius:20px}
+.std-pb-l{font-size:9px;color:var(--ink-ghost);display:flex;justify-content:space-between;margin-top:6px}
+/* COUNTDOWN */
+.count-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.ccount{background:#fff;border-radius:var(--r);padding:12px 16px;box-shadow:var(--sh);display:flex;align-items:center;gap:10px;flex:1;min-width:160px}
+.cc-days{font-size:22px;font-weight:600;min-width:44px}
+.cc-info{font-size:11px;color:var(--ink-soft);line-height:1.5}
+.cc-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+/* FILTERS */
+.ev-filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.fsel{padding:6px 11px;border:1.5px solid var(--ink-ghost);border-radius:var(--rs);font-size:12px;font-family:'DM Sans',sans-serif;color:var(--ink-mid);background:#fff;cursor:pointer;transition:var(--tr)}
+.fsel:focus{outline:none;border-color:var(--acc)}
+.fsearch{padding:6px 11px;border:1.5px solid var(--ink-ghost);border-radius:var(--rs);font-size:12px;color:var(--ink-mid);background:#fff;transition:var(--tr);width:220px}
+.fsearch:focus{outline:none;border-color:var(--acc)}
+/* TABLE */
+.ev-tbl{width:100%;border-collapse:collapse}
+.ev-tbl th{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-ghost);padding:7px 10px;text-align:left;border-bottom:1.5px solid #eef2f7}
+.ev-tbl td{padding:9px 10px;font-size:12px;color:var(--ink-mid);border-bottom:1px solid #f5f7fa;vertical-align:middle}
+.ev-tbl tr:hover td{background:#f9fbfd}
+.ev-id{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink-ghost)}
+.ev-txt{color:var(--ink);max-width:300px;line-height:1.5}
+.ev-ev{font-size:11px;color:var(--acc);max-width:200px;line-height:1.4}
+.spill{display:inline-flex;align-items:center;font-size:10px;font-weight:500;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.s-ni{background:var(--SVbg);color:var(--SV)}.s-ee{background:var(--Cbg);color:var(--C)}
+.s-bl{background:var(--Bbg);color:var(--B)}.s-enc{background:#e8f0fb;color:#1d5fa8}
+.s-comp{background:var(--Abg);color:var(--A);font-weight:600}
+.s-crit{background:var(--Dbg);color:var(--D);font-weight:600}
+/* AREA CARDS */
+.area-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
+.ac{background:#fff;border-radius:var(--r);padding:18px;box-shadow:var(--sh)}
+.ac-h{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.ac-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.ac-title{font-size:12px;font-weight:600;color:var(--ink);line-height:1.3}
+.ac-sub{font-size:10px;color:var(--ink-soft)}
+.ac-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.ac-stat{background:var(--paper);border-radius:var(--rs);padding:8px 10px}
+.ac-sl{font-size:9px;color:var(--ink-ghost);text-transform:uppercase;letter-spacing:.3px}
+.ac-sv{font-size:18px;font-weight:600}
+.ac-pw{background:#eef2f7;border-radius:20px;height:5px;overflow:hidden}
+.ac-pf{height:100%;border-radius:20px;transition:width .6s}
+.ac-pl{display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft);margin-bottom:4px}
+.sbb{display:flex;height:7px;border-radius:20px;overflow:hidden;gap:1px;margin-top:8px}
+.sbb-s{height:100%;transition:width .5s}
+/* EVIDENCE */
+.evid-std-title{font-size:12px;font-weight:600;color:var(--acc);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #eef2f7;margin-top:16px}
+.evid-std-title:first-child{margin-top:0}
+.evid-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #f5f7fa;font-size:12px}
+.evid-item:last-child{border-bottom:none}
+.evid-check{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--ink-ghost);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
+.evid-check.done{background:var(--A);border-color:var(--A);color:#fff}
+.evid-check.part{background:var(--B);border-color:var(--B);color:#fff}
+.evid-txt{color:var(--ink-mid);line-height:1.5;flex:1}
+.evid-crono{font-size:10px;color:var(--acc);margin-top:2px}
+.evid-none{font-size:10px;color:var(--ink-ghost);margin-top:2px;font-style:italic}
+/* RESPONSIVE */
+@media(max-width:900px){
+  .kpi-row{grid-template-columns:repeat(3,1fr)}
+  .std-grid{grid-template-columns:repeat(3,1fr)}
+  .g2,.g3{grid-template-columns:1fr}
+  .area-grid{grid-template-columns:repeat(2,1fr)}
+  .main{padding:14px}.tabs{padding:0 14px}
+}
+</style>
+</head>
+<body>
+
+<!-- SETUP OVERLAY -->
+<div class="overlay" id="OVL">
+ <div class="setup-card">
+  <h2>Conectar con Google Sheets</h2>
+  <p>Este dashboard usa un <strong>Apps Script como proxy</strong> para leer el Sheet de forma segura, sin exponer credenciales. Sigue los pasos de configuración una sola vez.</p>
+
+  <div class="steps">
+    <div><span class="step-num">1</span><strong>Crea el script proxy:</strong> Ve a <code>script.google.com</code> → <strong>Nuevo proyecto</strong></div>
+    <div><span class="step-num">2</span>Borra el código que aparece y pega el contenido del archivo <code>apps_script_proxy.js</code></div>
+    <div><span class="step-num">3</span>En la línea 10, reemplaza <code>PEGA_AQUÍ_EL_ID_DE_TU_GOOGLE_SHEETS</code> con el ID real de tu Sheet</div>
+    <div><span class="step-num">4</span>Ejecuta primero la función <code>testProxy</code> para verificar que lee bien los datos</div>
+    <div><span class="step-num">5</span><strong>Implementar → Nueva implementación</strong> → Tipo: <strong>Aplicación web</strong></div>
+    <div><span class="step-num">6</span>Ejecutar como: <strong>Yo</strong> · Acceso: <strong>Cualquier persona</strong> → <strong>Implementar</strong></div>
+    <div><span class="step-num">7</span>Copia la <strong>URL de la aplicación web</strong> que aparece y pégala abajo</div>
+  </div>
+
+  <div class="err-box" id="ERR"></div>
+  <div class="ok-box" id="OK"></div>
+
+  <div class="ig">
+   <label>URL del Apps Script <span>(termina en /exec)</span></label>
+   <input type="text" id="SURL" placeholder="https://script.google.com/macros/s/AKfy.../exec"/>
+  </div>
+
+  <button class="btn-p" id="BTNCON" onclick="connectProxy()">Conectar y cargar datos</button>
+  <hr class="divider">
+  <button class="btn-d" onclick="loadDemo()">Ver con datos de demostración →</button>
+ </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="tb">
+ <div class="tb-l">
+  <div class="logo">S</div>
+  <div>
+   <div class="tb-title">Tablero SOFÍA</div>
+   <div class="tb-sub">Universidad César Vallejo</div>
+  </div>
+ </div>
+ <div class="tb-r">
+  <div class="sync"><div class="dot" id="DOT"></div><span id="SYNC">desconectado</span></div>
+  <button class="btn-sm" onclick="document.getElementById('OVL').style.display='flex'">⚙ Configurar</button>
+  <button class="btn-sm" onclick="refresh()">↻ Actualizar</button>
+ </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+ <div class="tab on"  onclick="showPage('p1',this)">Resumen ejecutivo</div>
+ <div class="tab"     onclick="showPage('p2',this)">Acciones del cronograma</div>
+ <div class="tab"     onclick="showPage('p3',this)">Por área</div>
+ <div class="tab"     onclick="showPage('p4',this)">Evidencias SOFÍA</div>
+</div>
+
+<div class="main">
+
+<!-- P1: RESUMEN -->
+<div class="page on" id="p1">
+ <div class="lup" id="LUP">Sin datos</div>
+ <div class="count-row" id="COUNTS"></div>
+ <div class="kpi-row">
+  <div class="kpi crit"><div class="kpi-lbl">Críticos</div><div class="kpi-val" id="K-crit">–</div><div class="kpi-sub">acción urgente</div></div>
+  <div class="kpi ni">  <div class="kpi-lbl">Pendientes</div><div class="kpi-val" id="K-pend">–</div><div class="kpi-sub">sin iniciar</div></div>
+  <div class="kpi ee">  <div class="kpi-lbl">En elaboración</div><div class="kpi-val" id="K-ee">–</div><div class="kpi-sub">en proceso</div></div>
+  <div class="kpi enc"> <div class="kpi-lbl">En curso</div><div class="kpi-val" id="K-enc">–</div><div class="kpi-sub">avanzando</div></div>
+  <div class="kpi comp"><div class="kpi-lbl">Completados</div><div class="kpi-val" id="K-comp">–</div><div class="kpi-sub">evidencia lista</div></div>
+ </div>
+ <div class="g3">
+  <div class="card">
+   <div class="card-h"><span class="card-t">Avance por estándar SOFÍA</span><span class="card-b">acciones en curso + completadas</span></div>
+   <div id="PROGTBL"></div>
+  </div>
+  <div class="card">
+   <div class="card-h"><span class="card-t">Dimensión PDCA</span><span class="card-b">distribución</span></div>
+   <div style="position:relative;height:170px"><canvas id="PDCAch" role="img" aria-label="Distribución PDCA">Distribución PDCA</canvas></div>
+   <div class="pdca-leg" id="PDCAleg"></div>
+  </div>
+ </div>
+ <div class="card" style="margin-bottom:16px">
+  <div class="card-h"><span class="card-t">Estado por estándar</span><span class="card-b">clic → filtrar acciones</span></div>
+  <div class="std-grid" id="STDGRID"></div>
+ </div>
+ <div class="card">
+  <div class="card-h"><span class="card-t">Distribución de estados por estándar</span></div>
+  <div style="position:relative;height:240px"><canvas id="STACKch" role="img" aria-label="Estados por estándar">Estados por estándar</canvas></div>
+  <div id="STACKleg" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:11px;color:var(--ink-soft)"></div>
+ </div>
+</div>
+
+<!-- P2: ACCIONES -->
+<div class="page" id="p2">
+ <div class="card">
+  <div class="card-h"><span class="card-t">Acciones desagregadas del cronograma</span></div>
+  <div class="ev-filters">
+   <input class="fsearch" type="text" id="FSRCH" placeholder="Buscar acción..." oninput="renderAct()">
+   <select class="fsel" id="FAREA" onchange="renderAct()">
+    <option value="">Todas las áreas</option>
+    <option>Rectorado/Gerencia</option><option>Vicerrec. Calidad</option>
+    <option>Vicerrec. Académico</option><option>Vicerrec. Investigación</option>
+    <option>Vicerrec. Bienestar/RSU</option>
+   </select>
+   <select class="fsel" id="FSTD" onchange="renderAct()">
+    <option value="">Todos los estándares</option>
+    <option>E1</option><option>E2</option><option>E3</option><option>E4</option><option>E5</option>
+    <option>E6</option><option>E7</option><option>E8</option><option>E9</option><option>E10</option>
+   </select>
+   <select class="fsel" id="FEST" onchange="renderAct()">
+    <option value="">Todos los estados</option>
+    <option>Crítico</option><option>Pendiente</option><option>En elaboración</option>
+    <option>En curso</option><option>Completado</option>
+   </select>
+  </div>
+  <div style="overflow-x:auto">
+   <table class="ev-tbl">
+    <thead><tr><th>#</th><th>Área</th><th>Acción</th><th>Estándar</th><th>Estado</th><th>Plazo</th><th>Evidencia esperada</th></tr></thead>
+    <tbody id="ACTTBL"></tbody>
+   </table>
+  </div>
+  <div style="font-size:11px;color:var(--ink-ghost);margin-top:10px;font-family:'DM Mono',monospace" id="ACTCNT"></div>
+ </div>
+</div>
+
+<!-- P3: POR ÁREA -->
+<div class="page" id="p3">
+ <div class="area-grid" id="AREAGRID"></div>
+ <div class="card">
+  <div class="card-h"><span class="card-t">Avance comparativo por área</span><span class="card-b">estados apilados</span></div>
+  <div style="position:relative;height:260px"><canvas id="AREAch" role="img" aria-label="Avance por área">Avance por área</canvas></div>
+ </div>
+</div>
+
+<!-- P4: EVIDENCIAS SOFÍA -->
+<div class="page" id="p4">
+ <div class="card">
+  <div class="card-h">
+   <span class="card-t">Evidencias requeridas por la Guía SOFÍA — cobertura en el cronograma</span>
+   <select class="fsel" id="FEVSTD" onchange="renderEvid()">
+    <option value="">Todos los estándares</option>
+    <option>E1</option><option>E2</option><option>E3</option><option>E4</option><option>E5</option>
+    <option>E6</option><option>E7</option><option>E8</option><option>E9</option><option>E10</option>
+   </select>
+  </div>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;font-size:11px;color:var(--ink-soft)">
+   <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:3px;background:var(--A);display:inline-block"></span>Cubierta por acción del cronograma</span>
+   <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:3px;background:var(--B);display:inline-block"></span>Parcialmente cubierta</span>
+   <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:3px;border:1.5px solid var(--ink-ghost);display:inline-block"></span>Sin acción asignada</span>
+  </div>
+  <div id="EVIDLIST"></div>
+ </div>
+</div>
+
+</div>
+
+<script>
+// ── Datos demo (cronograma v2, 82 acciones) ──
+const ACCIONES = [{"id":"A01","num":1,"area":"Rectorado/Gerencia","texto":"Elaborar Plan de Comunicación con KPIs y estrategia de reposicionamiento","std":"E1, E2","pdca":"P","estado":"Pendiente","plazo":"30/04/2026","evidencia":"Documento con KPIs medibles, acciones de reposicionamiento y calendario"},{"id":"A02","num":2,"area":"Rectorado/Gerencia","texto":"Contratar agencia externa: propuesta técnica con alcance, fases y presupuesto","std":"E1, E2","pdca":"P","estado":"Pendiente","plazo":"30/04/2026","evidencia":"Brief firmado con agencia seleccionada; propuesta técnica y económica aprobada"},{"id":"A03","num":3,"area":"Rectorado/Gerencia","texto":"Diagnóstico reputacional sistematizado (percepción interna y externa)","std":"E1, E2","pdca":"P","estado":"Pendiente","plazo":"30/04/2026","evidencia":"Informe de diagnóstico con análisis de percepción diferenciado por público"},{"id":"A04","num":4,"area":"Rectorado/Gerencia","texto":"Auditoría de marketing y política de alianzas con KPIs","std":"E1, E2","pdca":"P","estado":"Pendiente","plazo":"13/05/2026","evidencia":"Informe de auditoría + política de alianzas aprobada con KPIs de seguimiento"},{"id":"A05","num":5,"area":"Rectorado/Gerencia","texto":"Política de Comunicación y Rendición de Cuentas — aprobar y publicar","std":"E1, E2, E9","pdca":"P","estado":"Pendiente","plazo":"30/04/2026","evidencia":"Política publicada en web institucional con acta de aprobación del Directorio"},{"id":"A06","num":6,"area":"Rectorado/Gerencia","texto":"Política de Gestión de Datos — aprobar y publicar","std":"E1, E9","pdca":"P","estado":"Pendiente","plazo":"06/05/2026","evidencia":"Política publicada con alcance de tratamiento, privacidad y seguridad de datos"},{"id":"A07","num":7,"area":"Rectorado/Gerencia","texto":"Política de Alianzas con KPIs — aprobar y publicar","std":"E1, E2","pdca":"P","estado":"Pendiente","plazo":"13/05/2026","evidencia":"Política publicada con criterios de selección de alianzas y KPIs de seguimiento"},{"id":"A08","num":8,"area":"Rectorado/Gerencia","texto":"Elaborar Política de Integridad Académica — redactar, aprobar y publicar","std":"E10","pdca":"P","estado":"Pendiente","plazo":"13/05/2026","evidencia":"Política publicada con alcance, sanciones y canales de denuncia"},{"id":"A09","num":9,"area":"Rectorado/Gerencia","texto":"Normativa que acredita representación de decanos y estudiantes en consejos — enviar a asesoras","std":"E1","pdca":"P","estado":"Pendiente","plazo":"06/05/2026","evidencia":"Reglamento o acuerdo aprobado que regule la participación externa en órganos colegiados"},{"id":"A10","num":10,"area":"Rectorado/Gerencia","texto":"Revisar Política de Internacionalización — completar y enviar a asesoras","std":"E1, E6","pdca":"P","estado":"Pendiente","plazo":"30/04/2026","evidencia":"Política con objetivos, líneas de acción, convenios marco y metas de movilidad"},{"id":"A11","num":11,"area":"Rectorado/Gerencia","texto":"Revisar, actualizar Reglamento de Internacionalización — completar y enviar a asesoras","std":"E1, E6","pdca":"P","estado":"Pendiente","plazo":"30/04/2026","evidencia":"Reglamento con procedimientos, órganos y criterios de movilidad y cooperación"},{"id":"A12","num":12,"area":"Rectorado/Gerencia","texto":"Actualizar Estatuto / MOF / Reglamento General y verificar alineación entre sí (vigencia y contenido)","std":"E1, E2","pdca":"P","estado":"Pendiente","plazo":"13/05/2026","evidencia":"Estatuto/MOF/Reglamento general actualizados y alineados entre sí"},{"id":"A13","num":13,"area":"Rectorado/Gerencia","texto":"Elaboración de Políticas: aseguramiento de la calidad (libertad académica, control de fraude, prevención discriminación) — redactar, aprobar","std":"E1, E2","pdca":"P","estado":"Pendiente","plazo":"13/05/2026","evidencia":"Política de aseguramiento de la calidad publicada con alcance institucional"},{"id":"A14","num":14,"area":"Rectorado/Gerencia","texto":"Elaborar Política de conflictos de interés para todos los estamentos y actividades — redactar, aprobar y publicar","std":"E1, E2","pdca":"P","estado":"Pendiente","plazo":"13/05/2026","evidencia":"Política de conflictos de interés aprobada y publicada"},{"id":"A15","num":15,"area":"Rectorado/Gerencia","texto":"Consolidar Código de Ética y Conducta: centralizar protocolos contra acoso, hostigamiento y discriminación con plan de difusión y checklist ","std":"E1, E2","pdca":"P","estado":"Pendiente","plazo":"13/05/2026","evidencia":"Código de Ética y Conducta publicado con checklist de aplicación"},{"id":"A16","num":16,"area":"Rectorado/Gerencia","texto":"Elaborar Manual de identidad y comunicación institucional — redactar, aprobar y publicar","std":"E1, E2, E9","pdca":"P","estado":"Pendiente","plazo":"13/05/2026","evidencia":"Manual de identidad aprobado con lineamientos de marca, tono y canales"},{"id":"A17","num":17,"area":"Rectorado/Gerencia","texto":"Redactar Política de comunicación externa y publicidad (énfasis en veracidad) — redactar, aprobar y publicar","std":"E1, E2, E9","pdca":"P","estado":"Pendiente","plazo":"13/05/2026","evidencia":"Política de comunicación externa y publicidad aprobada y publicada"},{"id":"A18","num":18,"area":"Rectorado/Gerencia","texto":"Elaborar Protocolo de Transparencia Universitaria — redactar, aprobar y publicar","std":"E1, E9","pdca":"P","estado":"Pendiente","plazo":"13/05/2026","evidencia":"Protocolo publicado con mecanismos de rendición pública de cuentas"},{"id":"A19","num":19,"area":"Rectorado/Gerencia","texto":"Revisar y publicar Reglamento Académico de Facultad con atribuciones del decano actualizadas — enviar a asesoras","std":"E1, E2","pdca":"P","estado":"Pendiente","plazo":"19/05/2026","evidencia":"Reglamento de Facultad vigente con atribuciones claramente definidas"},{"id":"A20","num":20,"area":"Rectorado/Gerencia","texto":"Revisar y actualizar organigramas de campus/filiales alineados al Estatuto, MOF y Reglamento General — aprobar y publicar","std":"E1, E2","pdca":"P","estado":"Pendiente","plazo":"19/05/2026","evidencia":"Organigramas de campus publicados y alineados a documentación institucional"},{"id":"A21","num":21,"area":"Vicerrec. Calidad","texto":"Completar procesos PDCA, roles y calendario de comités con stakeholders — enviar a asesoras","std":"E8, E10","pdca":"P","estado":"En curso","plazo":"30/04/2026","evidencia":"Manual completo con mapa de procesos, roles asignados y calendario de comités"},{"id":"A22","num":22,"area":"Vicerrec. Calidad","texto":"Integrar indicadores de calidad vinculados al cuadro de mando del PEI — enviar a asesoras","std":"E8, E10","pdca":"P","estado":"Pendiente","plazo":"13/05/2026","evidencia":"Manual con indicadores alineados a los 6 objetivos del PEI 2026–2030"},{"id":"A23","num":23,"area":"Vicerrec. Calidad","texto":"Diseñar matriz estándar: acciones–responsables–plazos–indicadores–cierre\n — enviar a asesoras","std":"E10","pdca":"P","estado":"Pendiente","plazo":"19/05/2026","evidencia":"Plantilla/matriz documentada, aprobada y disponible para todos los vicerrectorados"},{"id":"A24","num":24,"area":"Vicerrec. Calidad","texto":"Definir protocolo de comunicación del cierre de no conformidades — redactar, aprobar y publicar","std":"E10","pdca":"P","estado":"Pendiente","plazo":"19/05/2026","evidencia":"Procedimiento escrito con canales, responsables y plazos de comunicación interna"},{"id":"A25","num":25,"area":"Vicerrec. Calidad","texto":"Plan de Mejora anual (formato estandarizado) — enviar a asesoras","std":"E10","pdca":"P","estado":"Pendiente","plazo":"26/05/2026","evidencia":"Documento con formato estándar, acciones anuales, responsables y fechas de cierre"},{"id":"A26","num":26,"area":"Vicerrec. Calidad","texto":"Diseñar dashboard con semáforo de avance por estándar y evidencias adjuntas","std":"E8, E10","pdca":"P","estado":"Pendiente","plazo":"26/05/2026","evidencia":"Dashboard operativo con metas trimestrales, evidencias y responsables por estándar"},{"id":"A27","num":27,"area":"Vicerrec. Calidad","texto":"Capacitar a responsables de cada vicerrectorado en uso del tablero","std":"E8, E10","pdca":"P","estado":"Pendiente","plazo":"01-05 junio 2026","evidencia":"Sesión de formación realizada; acta de asistencia y manual de uso del tablero"},{"id":"A28","num":28,"area":"Vicerrec. Calidad","texto":"Documentar mecanismo de escalamiento de no conformidades y oportunidades de mejora al Directorio/Consejo Universitario: actas de elevación y","std":"E8, E10","pdca":"P","estado":"Pendiente","plazo":"19/05/2026","evidencia":"Actas de reuniones de Directorio/Consejo con no conformidades elevadas y plan de mejoras"},{"id":"A29","num":29,"area":"Vicerrec. Calidad","texto":"Diseñar e implementar Encuestas de Satisfacción institucionales (estudiantes, docentes, PAS, egresados, empleadores) con análisis de resulta","std":"E8, E9, E10","pdca":"P","estado":"Pendiente","plazo":"26/05/2026","evidencia":"Encuestas aplicadas con informe de resultados y acciones de mejora derivadas"},{"id":"A30","num":30,"area":"Vicerrec. Académico","texto":"Oficializar propuesta de ajuste de malla por carrera (reducción no especializadas)","std":"E5","pdca":"H","estado":"En curso","plazo":"Abril–Mayo 2026","evidencia":"Actas de comisión aprobadas por carrera con propuesta de ajuste firmada"},{"id":"A31","num":31,"area":"Vicerrec. Académico","texto":"Publicar cronograma de implementación de nuevas mallas post-marzo 2026","std":"E5","pdca":"H","estado":"Pendiente","plazo":"01/06/2026","evidencia":"Cronograma publicado con fechas de entrada en vigor por carrera y campus"},{"id":"A32","num":32,"area":"Vicerrec. Académico","texto":"Avances formales de revisión curricular — enviar a asesoras","std":"E5","pdca":"H","estado":"Pendiente","plazo":"30/04/2026","evidencia":"Documento formal con avances de revisión curricular por facultad/carrera"},{"id":"A33","num":33,"area":"Vicerrec. Académico","texto":"Redactar y publicar Norma de Evaluación Académica — redactar, aprobar y publicar","std":"E5","pdca":"H","estado":"Pendiente","plazo":"30/04/2026","evidencia":"Normativa publicada con criterios, tipos de evaluación y ponderaciones por modalidad"},{"id":"A34","num":34,"area":"Vicerrec. Académico","texto":"Elaborar y publicar protocolos de accesibilidad y nivelación — redactar, aprobar y publicar","std":"E5","pdca":"H","estado":"Pendiente","plazo":"30/04/2026","evidencia":"Protocolo con rutas de atención, adaptaciones curriculares y seguimiento individual"},{"id":"A35","num":35,"area":"Vicerrec. Académico","texto":"Actualizar y activar la bolsa de trabajo institucional — enviar a asesoras","std":"E5, E7","pdca":"H","estado":"Pendiente","plazo":"06/05/2026","evidencia":"Plataforma activa con convenios actualizados y métricas de empleabilidad de egresados"},{"id":"A36","num":36,"area":"Vicerrec. Académico","texto":"Completar actualización de diseños didácticos y materiales por área","std":"E5","pdca":"H","estado":"En curso","plazo":"Abril–Mayo 2026","evidencia":"Evidencias de actualización de diseños didácticos por área; repositorio de materiales"},{"id":"A37","num":37,"area":"Vicerrec. Académico","texto":"Consolidar procedimiento de coordinadores especialistas por carrera","std":"E5","pdca":"H","estado":"En curso","plazo":"Abril 2026","evidencia":"Procedimiento documentado y comunicado a todos los coordinadores activos"},{"id":"A38","num":38,"area":"Vicerrec. Académico","texto":"Verificar y confirmar llegada e instalación operativa de equipos por campus","std":"E4","pdca":"H","estado":"Crítico","plazo":"30/06/2026","evidencia":"Informe por campus con fecha de recepción, instalación y prueba de funcionamiento"},{"id":"A39","num":39,"area":"Vicerrec. Académico","texto":"Reprogramar fecha del panel SOFÍA si laboratorios no están listos","std":"E4","pdca":"H","estado":"Crítico","plazo":"15 de julio 2026","evidencia":"Comunicación formal a SOFÍA con nueva fecha propuesta y justificación documentada"},{"id":"A40","num":40,"area":"Vicerrec. Académico","texto":"Actualizar Reglamento de selección y designación de directivos académicos (perfil de puesto, periodo de vigencia y criterios de renovación)","std":"E3, E5","pdca":"H","estado":"Pendiente","plazo":"13/05/2026","evidencia":"Reglamento actualizado con perfil Maestría/Doctorado, experiencia y gestión curricular"},{"id":"A41","num":41,"area":"Vicerrec. Académico","texto":"Elaborar Matriz de idoneidad académica por programa (perfil vs. necesidades específicas) — enviar a asesoras","std":"E3, E5","pdca":"H","estado":"Pendiente","plazo":"13/05/2026","evidencia":"Matriz aprobada por carrera con criterios de idoneidad verificables"},{"id":"A42","num":42,"area":"Vicerrec. Académico","texto":"Elaborar Directiva de carga académica y gestión: distinción horas lectivas / preparación / investigación / tutoría; máximos por modalidad — ","std":"E3, E5","pdca":"H","estado":"Pendiente","plazo":"19/05/2026","evidencia":"Directiva aprobada con definición de horas por tipo y equivalencia virtual/presencial"},{"id":"A43","num":43,"area":"Vicerrec. Académico","texto":"Implementar Certificación de Competencias Digitales: registro de docentes habilitados para entornos virtuales/semipresenciales — enviar a as","std":"E3, E5","pdca":"H","estado":"Pendiente","plazo":"19/05/2026","evidencia":"Registro actualizado de docentes certificados con competencias digitales verificadas"},{"id":"A44","num":44,"area":"Vicerrec. Académico","texto":"Revisar y actualizar la tabla del profesorado — enviar a asesoras","std":"E3","pdca":"H","estado":"Pendiente","plazo":"19/05/2026","evidencia":"Tabla del profesorado actualizado"},{"id":"A45","num":45,"area":"Vicerrec. Académico","texto":"Elaborar Organigrama Funcional de Empleabilidad/Emprendimiento: Coordinación Académica, Dirección de Empleabilidad, Centro de Emprendimiento","std":"E5, E7","pdca":"H","estado":"Pendiente","plazo":"26/05/2026","evidencia":"Organigrama aprobado con roles, funciones y dependencias claramente definidos"},{"id":"A46","num":46,"area":"Vicerrec. Académico","texto":"Elaborar Plan de Vinculación Empresarial: segmentación de aliados por sector, modelo de convenios por niveles (prácticas/empleabilidad), pro","std":"E5, E7","pdca":"H","estado":"Pendiente","plazo":"26/05/2026","evidencia":"Plan aprobado con clasificación de empresas por sector y niveles de convenio"},{"id":"A47","num":47,"area":"Vicerrec. Académico","texto":"Revisar y actualizar el Reglamento de Prácticas Pre-Profesionales y Profesionales (protocolo, supervisión, normas legales) y Elaborar el Man","std":"E5, E7","pdca":"H","estado":"Pendiente","plazo":"26/05/2026","evidencia":"Reglamento publicado con sistema de supervisión, evaluación y reportes de inserción laboral"},{"id":"A48","num":48,"area":"Vicerrec. Investigación","texto":"Incorporar tablas de metas/indicadores por cada uno de los 7 ejes del PFI","std":"E6","pdca":"H","estado":"En curso","plazo":"30/04/2026","evidencia":"Tablas con indicadores, línea base, metas anuales y acumuladas (2026–2030) por eje"},{"id":"A49","num":49,"area":"Vicerrec. Investigación","texto":"Elaborar cronograma Excel 2026–2030 del PFI con hitos y responsables  — enviar a asesoras","std":"E6","pdca":"H","estado":"Pendiente","plazo":"06/05/2026","evidencia":"Fichero Excel con hitos, responsables y fechas de verificación para los 5 años del PFI"},{"id":"A50","num":50,"area":"Vicerrec. Investigación","texto":"Formalizar cartera de 15 proyectos + plan de talleres de fondos internacionales  — enviar a asesoras","std":"E6","pdca":"H","estado":"Pendiente","plazo":"19/05/2026","evidencia":"Cartera documentada con ficha por proyecto (objetivo, financiador, cronograma, PI)"},{"id":"A51","num":51,"area":"Vicerrec. Investigación","texto":"Incorporar metas JCR/WoS y estrategia de refuerzo de fondos externos","std":"E6","pdca":"H","estado":"Pendiente","plazo":"19/05/2026","evidencia":"Sección del PFI con metas de publicaciones indexadas y fuentes de financiación externas"},{"id":"A52","num":52,"area":"Vicerrec. Investigación","texto":"Revisar y actualizar el Reglamento de Propiedad Intelectual (PI) 2026","std":"E6","pdca":"H","estado":"Pendiente","plazo":"19/05/2026","evidencia":"Lineamientos aprobados con procedimiento de registro, titularidad y explotación"},{"id":"A53","num":53,"area":"Vicerrec. Investigación","texto":"Elaborar plan de consolidación de grupos (meta +20% a 2028) — redactar, aprobar y publicar","std":"E6","pdca":"H","estado":"Pendiente","plazo":"Mayo 2026","evidencia":"Plan con criterios de consolidación, recursos asignados y calendario de evaluación"},{"id":"A54","num":54,"area":"Vicerrec. Investigación","texto":"Formalizar ruta de transferencia tecnológica (PI/comercialización)","std":"E6","pdca":"H","estado":"Pendiente","plazo":"Mayo 2026","evidencia":"Protocolo con fases, actores, valorización y registro sistemático de patentes"},{"id":"A55","num":55,"area":"Vicerrec. Investigación","texto":"Definir estrategia de alianzas y metas de captación de fondos externos","std":"E6","pdca":"H","estado":"Pendiente","plazo":"Mayo 2026","evidencia":"Listado de alianzas activas, convocatorias identificadas y metas de captación externa"},{"id":"A56","num":56,"area":"Vicerrec. Investigación","texto":"Listado de tesis doctorales en curso y concluidas","std":"E6","pdca":"H","estado":"Pendiente","plazo":"Mayo 2026","evidencia":"Listado sistematizado con estado, director, línea y fecha prevista de defensa"},{"id":"A57","num":57,"area":"Vicerrec. Investigación","texto":"Listado de publicaciones con indicadores de calidad por año (JCR/WoS/Scopus)","std":"E6","pdca":"H","estado":"Pendiente","plazo":"Mayo 2026","evidencia":"Base de datos con publicaciones 2022–2026, cuartil, DOI e impacto por año"},{"id":"A58","num":58,"area":"Vicerrec. Investigación","texto":"Listado de proyectos de investigación internacionales activos","std":"E6","pdca":"H","estado":"Pendiente","plazo":"Mayo 2026","evidencia":"Listado con entidad financiadora, monto, contrapartes y estado de ejecución"},{"id":"A59","num":59,"area":"Vicerrec. Investigación","texto":"Elaborar plan de mejora 2026–2028 con objetivos, acciones y presupuesto — redactar, aprobar y publicar","std":"E6","pdca":"H","estado":"Pendiente","plazo":"26/05/2026","evidencia":"Documento con objetivos, acciones, responsables, presupuesto y métricas de seguimiento"},{"id":"A60","num":60,"area":"Vicerrec. Investigación","texto":"Revisar y actualizar el Reglamento para los investigadores de la UCV: contrato por duración del proyecto, sin carga lectiva, con asesoría de","std":"E3, E6","pdca":"H","estado":"Pendiente","plazo":"06/05/2026","evidencia":"Reglamento aprobado con condiciones contractuales del investigador a tiempo completo"},{"id":"A61","num":61,"area":"Vicerrec. Investigación","texto":"Elaborar Reglamento de incentivos a la investigación: categorización por grado/Renacyt, bono por publicación, beneficios no monetarios, redu","std":"E3, E6","pdca":"H","estado":"Pendiente","plazo":"13/05/2026","evidencia":"Reglamento aprobado con tabla de incentivos, criterios y mecanismos de aplicación"},{"id":"A62","num":62,"area":"Vicerrec. Investigación","texto":"Revisar, actualizar y/o restructurar el Reglamento de Propiedad Intelectual y grupos interdisciplinarios: definición, pautas de constitución","std":"E6","pdca":"H","estado":"Pendiente","plazo":"06/05/2026","evidencia":"Reglamento aprobado con resolución de creación de grupos interdisciplinarios"},{"id":"A63","num":63,"area":"Vicerrec. Investigación","texto":"Elaborar Procedimiento de adscripción y registro de grupos de investigación; Resolución de reconocimiento con presupuesto asignado  — redact","std":"E6","pdca":"H","estado":"Pendiente","plazo":"13/05/2026","evidencia":"Procedimiento publicado; resoluciones de reconocimiento de grupos emitidas"},{"id":"A64","num":64,"area":"Vicerrec. Investigación","texto":"Elaborar Informe de convenios en ejecución: resultados de movilidad docente/estudiantil, análisis de efectividad e impacto formativo","std":"E6","pdca":"H","estado":"Pendiente","plazo":"06/05/2026","evidencia":"Informe con cartas de aceptación para estancias y registros de redes internacionales activas"},{"id":"A65","num":65,"area":"Vicerrec. Investigación","texto":"Elaborar Directiva de Captación de Fondos Externos y Guía de Formulación de Proyectos con calendario de convocatorias","std":"E6","pdca":"H","estado":"Pendiente","plazo":"19/05/2026","evidencia":"Directiva y guía aprobadas; calendario de convocatorias externas vigente"},{"id":"A66","num":66,"area":"Vicerrec. Investigación","texto":"Revisar y actualizar el Código de Ética en Investigación y constituir Comité de Ética con actas de funcionamiento","std":"E6","pdca":"H","estado":"Pendiente","plazo":"06/05/2026","evidencia":"Código aprobado; actas del Comité de Ética con casos revisados"},{"id":"A67","num":67,"area":"Vicerrec. Bienestar/RSU","texto":"Definir criterios de elegibilidad y cupos por campus/carrera","std":"E5, E7","pdca":"H","estado":"Pendiente","plazo":"30/04/2026","evidencia":"Documento con criterios aprobados, cupos por campus y procedimiento de solicitud"},{"id":"A68","num":68,"area":"Vicerrec. Bienestar/RSU","texto":"Validación legal y contable de la convocatoria","std":"E10","pdca":"P","estado":"Pendiente","plazo":"06/05/2026","evidencia":"Informe legal-contable validando la convocatoria y su viabilidad presupuestaria"},{"id":"A69","num":69,"area":"Vicerrec. Bienestar/RSU","texto":"Diagnóstico segmentado de deserción por perfil, campus y causa  — enviar a asesoras","std":"E7, E10","pdca":"P","estado":"Pendiente","plazo":"30/04/2026","evidencia":"Informe con segmentación por campus, modalidad y causa principal (económica/académica/reputacional)"},{"id":"A70","num":70,"area":"Vicerrec. Bienestar/RSU","texto":"Propuesta de medidas preventivas anti-deserción  — enviar a asesoras","std":"E5, E7","pdca":"H","estado":"Pendiente","plazo":"06/05 2026","evidencia":"Catálogo de medidas con recursos necesarios, responsables y calendario de implementación"},{"id":"A71","num":71,"area":"Vicerrec. Bienestar/RSU","texto":"Diseñar modelo de mentoría: perfil del mentor, procedimiento y seguimiento","std":"E5, E7","pdca":"H","estado":"Pendiente","plazo":"06/05/2026","evidencia":"Documento con perfil, emparejamiento, seguimiento y evaluación del mentor"},{"id":"A72","num":72,"area":"Vicerrec. Bienestar/RSU","texto":"Validación legal de los incentivos para mentores","std":"E5, E7","pdca":"H","estado":"Pendiente","plazo":"13/05/2026","evidencia":"Informe jurídico validando el esquema de incentivos y su compatibilidad normativa"},{"id":"A73","num":73,"area":"Vicerrec. Bienestar/RSU","texto":"Negociar y firmar convenios con empleadores para empleos compatibles","std":"E7","pdca":"H","estado":"Pendiente","plazo":"19/05/2026","evidencia":"Convenios firmados con protocolo de seguimiento de compatibilidad horaria"},{"id":"A74","num":74,"area":"Vicerrec. Bienestar/RSU","texto":"Implementar tablero de deserción por campus/carrera con alertas tempranas","std":"E7, E10","pdca":"P","estado":"Pendiente","plazo":"26/05/2026","evidencia":"Dashboard con tasa de deserción, alertas automáticas y seguimiento individual"},{"id":"A75","num":75,"area":"Vicerrec. Bienestar/RSU","texto":"Revisar, actualizar y publicar protocolo de acoso/hostigamiento","std":"E7, E10","pdca":"P","estado":"Pendiente","plazo":"30/04/2026","evidencia":"Protocolo publicado con canales de denuncia, plazos de resolución y sanciones"},{"id":"A76","num":76,"area":"Vicerrec. Bienestar/RSU","texto":"Difundir protocolo en todos los campus y modalidades","std":"E7","pdca":"H","estado":"Pendiente","plazo":"06/05/2026","evidencia":"Evidencias de difusión: comunicados, actas de reuniones, registro de sesiones formativas"},{"id":"A77","num":77,"area":"Vicerrec. Bienestar/RSU","texto":"Revisar, actualizar y publicar Política de inclusión, diversidad y equidad con lineamientos de accesibilidad universal (barreras físicas, se","std":"E5, E7","pdca":"H","estado":"Pendiente","plazo":"06/05/2026","evidencia":"Política aprobada y publicada con lineamientos de accesibilidad verificables"},{"id":"A78","num":78,"area":"Vicerrec. Bienestar/RSU","texto":"Elaborar Protocolo de atención a la discapacidad y necesidades educativas especiales (NEE)  — redactar, aprobar y publicar","std":"E5, E7","pdca":"H","estado":"Pendiente","plazo":"13/05/2026","evidencia":"Protocolo publicado con rutas de atención y adaptaciones para cada tipo de NEE"},{"id":"A79","num":79,"area":"Vicerrec. Bienestar/RSU","texto":"Revisar, actualizar y reestructurar Programa integral de bienestar estudiantil: salud mental, servicios de salud preventiva y vida universit","std":"E5, E7","pdca":"H","estado":"Pendiente","plazo":"19/05/2026","evidencia":"Programa documentado con oferta de servicios, cobertura e indicadores de impacto en retención"},{"id":"A80","num":80,"area":"Vicerrec. Bienestar/RSU","texto":"Elaborar Censo de diversidad estudiantil (género, procedencia, discapacidad, situación socioeconómica)","std":"E7, E9","pdca":"H","estado":"Pendiente","plazo":"26/05/2026","evidencia":"Censo aplicado con resultados sistematizados por campus y carrera"},{"id":"A81","num":81,"area":"Vicerrec. Bienestar/RSU","texto":"Elaborar Plan de Comunicación Interna sobre protocolos de acoso/hostigamiento/discriminación: distinción de conceptos, canales seguros y anó","std":"E7, E10","pdca":"P","estado":"Pendiente","plazo":"19/05/2026","evidencia":"Plan aprobado con estrategia diferenciada para docentes, estudiantes y administrativos"},{"id":"A82","num":82,"area":"Vicerrec. Bienestar/RSU","texto":"Generar reporte de estado de implementación de protocolos por programa y campus con indicadores de confianza","std":"E7, E10","pdca":"P","estado":"Pendiente","plazo":"26/05/2026","evidencia":"Informe con estado de implementación, encuestas de percepción de seguridad y resultados"}];
+// ── Estado global ─────────────────────────────────────────────────────────
+const G = { rows: [], proxyUrl: '', mode: 'none', lastSync: null };
+let pdcaChart=null, stackChart=null, areaChart=null;
+
+const PDCA_CFG = {
+  P:{label:'Planificar',color:'#5b21b6'},H:{label:'Hacer',color:'#065f46'},
+  V:{label:'Verificar',color:'#1e3a8a'},A:{label:'Actuar',color:'#92400e'},
+};
+const STD_NAMES = {
+  E1:'Política y Estrategia',E2:'Organización y Alianzas',E3:'Recursos Humanos',
+  E4:'Recursos Materiales',E5:'Formación',E6:'Investigación',E7:'Vinculación',
+  E8:'SAC',E9:'Gestión Info.',E10:'Plan Mejora'
+};
+const AREA_CFG = {
+  'Rectorado/Gerencia':    {icon:'🏛️',bg:'#fef9e7',col:'#7e5109'},
+  'Vicerrec. Calidad':     {icon:'✅',bg:'#f5eeff',col:'#5b21b6'},
+  'Vicerrec. Académico':   {icon:'📚',bg:'#e6f8f2',col:'#065f46'},
+  'Vicerrec. Investigación':{icon:'🔬',bg:'#e8f0fb',col:'#1e3a8a'},
+  'Vicerrec. Bienestar/RSU':{icon:'🤝',bg:'#fdecea',col:'#7d2225'},
+};
+const EST_CLS = {
+  'Crítico':'s-crit','Pendiente':'s-ni','En elaboración':'s-ee',
+  'En curso':'s-enc','Completado':'s-comp','Validado':'s-comp'
+};
+
+// ── Evidencias Guía SOFÍA ─────────────────────────────────────────────────
+const SOFIA_EV = [
+  {std:'E1',desc:'Política institucional pública (docencia, investigación, extensión)',acc:[5,13]},
+  {std:'E1',desc:'Plan Estratégico Institucional (PEI) 2026-2030',acc:[]},
+  {std:'E1',desc:'Cuadro de mando y evidencias de seguimiento del PEI',acc:[26]},
+  {std:'E1',desc:'Alineación de objetivos con unidades estructurales',acc:[12]},
+  {std:'E2',desc:'Estatuto / MOF / Reglamento General alineados entre sí',acc:[12]},
+  {std:'E2',desc:'Definición de órganos de gobierno y procesos de toma de decisiones',acc:[9,19,20]},
+  {std:'E2',desc:'Política de alianzas con universidades y convenios de cooperación',acc:[7]},
+  {std:'E2',desc:'Procedimientos de participación de estudiantes, docentes y PAS',acc:[9]},
+  {std:'E2',desc:'Actas de reuniones de órganos colegiados',acc:[]},
+  {std:'E2',desc:'Web pública con composición de órganos de gobierno',acc:[1,16,17]},
+  {std:'E2',desc:'Estados financieros auditados y plan de sostenibilidad',acc:[]},
+  {std:'E3',desc:'Relación de puestos de trabajo (RPT)',acc:[]},
+  {std:'E3',desc:'Tabla de profesorado (Tabla 2 Guía SOFÍA)',acc:[44]},
+  {std:'E3',desc:'CV resumido del profesorado (máx. 2000 caracteres)',acc:[44]},
+  {std:'E3',desc:'Proceso de selección, capacitación y evaluación del personal',acc:[36,37,40,41]},
+  {std:'E3',desc:'Programas de intercambio y movilidad de personal',acc:[10,11,64]},
+  {std:'E3',desc:'Reglamento del investigador (contrato sin carga lectiva)',acc:[60]},
+  {std:'E3',desc:'Directiva de carga académica con distinción de tipos de horas',acc:[42]},
+  {std:'E3',desc:'Certificación de Competencias Digitales docentes',acc:[43]},
+  {std:'E4',desc:'Espacios docentes, laboratorios, aulas informáticas y talleres',acc:[38,39]},
+  {std:'E4',desc:'Biblioteca, infraestructuras tecnológicas y campus virtual',acc:[]},
+  {std:'E4',desc:'Servicios: orientación académica, becas, bolsa de trabajo',acc:[35,67,68]},
+  {std:'E4',desc:'Recursos para investigación (laboratorios, bases de datos)',acc:[38,39]},
+  {std:'E5',desc:'Planes de estudio (grado, máster, doctorado) y tabla de titulaciones',acc:[30,31,32]},
+  {std:'E5',desc:'Requisitos de acceso, perfil de ingreso y criterios de admisión',acc:[33]},
+  {std:'E5',desc:'Procedimientos de flexibilidad y adaptación para diversidad funcional',acc:[34,77,78]},
+  {std:'E5',desc:'Normativa de convalidación y reconocimiento de estudios',acc:[33]},
+  {std:'E5',desc:'Acciones de apoyo y orientación al estudiante matriculado',acc:[71,72]},
+  {std:'E5',desc:'Perfiles directores de tesis en programas de doctorado',acc:[56]},
+  {std:'E5',desc:'Evidencias de resultados de aprendizaje (TFG, TFM, tesis)',acc:[30,31]},
+  {std:'E6',desc:'Estrategia de investigación y transferencia (PFI 2026-2030)',acc:[48,49,50,51]},
+  {std:'E6',desc:'Soporte institucional a la investigación (oficina, laboratorios)',acc:[53,54,55]},
+  {std:'E6',desc:'Tabla 3: grupos, líneas, publicaciones, proyectos, patentes',acc:[58,63]},
+  {std:'E6',desc:'Publicaciones con indicadores JCR/WoS/Scopus por año',acc:[57]},
+  {std:'E6',desc:'Proyectos de investigación activos (nacionales e internacionales)',acc:[58,64]},
+  {std:'E6',desc:'Patentes concedidas (datos de explotación)',acc:[52,61]},
+  {std:'E6',desc:'Reglamento de incentivos a la investigación',acc:[61]},
+  {std:'E6',desc:'Reglamento de PI y grupos interdisciplinarios',acc:[52,62]},
+  {std:'E6',desc:'Directiva de captación de fondos externos y guía de formulación',acc:[65]},
+  {std:'E6',desc:'Código de Ética en investigación y Comité de Ética',acc:[66]},
+  {std:'E7',desc:'Plan de captación de necesidades sociales y propuestas de solución',acc:[80,81,82]},
+  {std:'E7',desc:'Financiación y resultados de extensión universitaria anual',acc:[]},
+  {std:'E7',desc:'Convenios con empleadores para empleos compatibles',acc:[73]},
+  {std:'E7',desc:'Programa integral de bienestar estudiantil',acc:[79]},
+  {std:'E7',desc:'Política de inclusión, diversidad y equidad',acc:[77]},
+  {std:'E8',desc:'Manual del SAC completo (mapa de procesos + responsables)',acc:[21,22]},
+  {std:'E8',desc:'Procedimientos de gestión del SAC',acc:[23,24]},
+  {std:'E8',desc:'Escalamiento de no conformidades al Directorio con actas',acc:[28]},
+  {std:'E8',desc:'Auditorías internas de calidad con informes de gestión',acc:[28,29]},
+  {std:'E8',desc:'Informes de evaluaciones de agencias externas',acc:[]},
+  {std:'E9',desc:'Web pública institucional actualizada',acc:[1,2,3,16,17]},
+  {std:'E9',desc:'Indicadores públicos de la Universidad',acc:[26]},
+  {std:'E9',desc:'Proceso de gestión de la información',acc:[5,6]},
+  {std:'E9',desc:'Indicadores de perfil estudiantil y progreso académico',acc:[80,74]},
+  {std:'E9',desc:'Indicadores de satisfacción de colectivos (estudiantes, PAS, PDI)',acc:[29]},
+  {std:'E9',desc:'Indicadores de investigación públicos',acc:[57]},
+  {std:'E10',desc:'Mecanismos de actualización de titulaciones',acc:[30,31]},
+  {std:'E10',desc:'Análisis de resultados de encuestas de satisfacción',acc:[29]},
+  {std:'E10',desc:'Plantilla/formato del plan de mejora institucional',acc:[23,25]},
+  {std:'E10',desc:'Mecanismos de captación de necesidades del entorno',acc:[82]},
+  {std:'E10',desc:'Adecuación del plan de mejora con Agenda 2030',acc:[]},
+];
+
+// ── CONEXIÓN PROXY ────────────────────────────────────────────────────────
+async function connectProxy() {
+  const url = document.getElementById('SURL').value.trim();
+  const err = document.getElementById('ERR');
+  const ok  = document.getElementById('OK');
+  const btn = document.getElementById('BTNCON');
+  err.style.display='none'; ok.style.display='none';
+
+  if (!url || !url.includes('script.google.com')) {
+    err.textContent = 'Pega una URL válida de Apps Script (debe contener script.google.com).';
+    err.style.display='block'; return;
+  }
+
+  btn.disabled=true; btn.textContent='Conectando...';
+  setDot('off','conectando...');
+
+  try {
+    await fetchProxy(url);
+    G.proxyUrl = url;
+    localStorage.setItem('sofia_proxy_url', url);
+    ok.textContent = '✓ Conectado correctamente. ' + G.rows.length + ' acciones cargadas.';
+    ok.style.display='block';
+    setTimeout(()=>{ document.getElementById('OVL').style.display='none'; }, 1200);
+  } catch(e) {
+    err.innerHTML = '<strong>Error al conectar:</strong> ' + e.message +
+      '<br><br>Verifica que:<br>· La URL termina en <code>/exec</code><br>· El script está implementado como "Aplicación web"<br>· El acceso es "Cualquier persona"<br>· Ejecutaste primero <code>testProxy()</code> sin errores';
+    err.style.display='block';
+    setDot('off','error de conexión');
+  } finally {
+    btn.disabled=false; btn.textContent='Conectar y cargar datos';
+  }
+}
+
+async function fetchProxy(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || 'El script devolvió un error');
+  G.rows = json.data.acciones || [];
+  G.mode = 'live';
+  G.lastSync = new Date();
+  setDot('on', 'live · ' + G.lastSync.toLocaleTimeString('es-PE'));
+  document.getElementById('LUP').textContent =
+    'Datos en tiempo real desde Google Sheets · ' + G.rows.length + ' acciones · ' +
+    G.lastSync.toLocaleString('es-PE');
+  renderAll();
+  // Auto-refresh cada 3 minutos
+  setTimeout(()=>{ if(G.mode==='live') fetchProxy(G.proxyUrl).catch(()=>{}); }, 180000);
+}
+
+async function refresh() {
+  if (G.mode==='live' && G.proxyUrl) {
+    setDot('off','actualizando...');
+    try { await fetchProxy(G.proxyUrl); }
+    catch(e) { setDot('off','error al actualizar'); }
+  }
+}
+
+function loadDemo() {
+  G.rows = ACCIONES;
+  G.mode = 'demo';
+  G.lastSync = new Date();
+  setDot('demo', 'modo demo');
+  document.getElementById('LUP').textContent =
+    'Datos de demostración — cronograma v2 (82 acciones) · Conecta tu Google Sheets para datos reales';
+  document.getElementById('OVL').style.display = 'none';
+  renderAll();
+}
+
+function setDot(state, label) {
+  const d = document.getElementById('DOT');
+  d.className = 'dot' + (state==='on'?'':' '+state);
+  document.getElementById('SYNC').textContent = label;
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────
+function renderAll() {
+  renderKPIs(); renderCounts(); renderProg();
+  renderPDCA(); renderStdGrid(); renderStackChart();
+  renderAct(); renderAreaCards(); renderAreaChart(); renderEvid();
+}
+
+function est(r){ return r.estado||'Pendiente'; }
+
+function renderKPIs() {
+  const c={'Crítico':0,'Pendiente':0,'En elaboración':0,'En curso':0,'Completado':0,'Validado':0};
+  G.rows.forEach(r=>{ const e=est(r); if(c[e]!==undefined) c[e]++; else c['Pendiente']++; });
+  document.getElementById('K-crit').textContent = c['Crítico'];
+  document.getElementById('K-pend').textContent = c['Pendiente'];
+  document.getElementById('K-ee').textContent   = c['En elaboración'];
+  document.getElementById('K-enc').textContent  = c['En curso'];
+  document.getElementById('K-comp').textContent = c['Completado'] + c['Validado'];
+}
+
+function renderCounts() {
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const hitos = [
+    {label:'Cierre abril',   date:new Date(2026,3,30), color:'#c0392b'},
+    {label:'Visita INDIGO',  date:new Date(2026,5,8),  color:'#1d5fa8'},
+    {label:'Autoinforme',    date:new Date(2026,6,1),  color:'#0e9e6e'},
+    {label:'Panel SOFÍA',    date:new Date(2026,6,15), color:'#5b21b6'},
+  ];
+  document.getElementById('COUNTS').innerHTML = hitos.map(h => {
+    const d = Math.ceil((h.date - hoy) / 86400000);
+    const disp = d < 0 ? `hace ${-d}d` : d === 0 ? 'hoy' : `${d}d`;
+    const urgent = d >= 0 && d <= 7;
+    return `<div class="ccount">
+      <div class="cc-days" style="color:${urgent?'#c0392b':h.color}">${disp}</div>
+      <div class="cc-info">
+        <div class="cc-label" style="color:${h.color}">${h.label}</div>
+        ${h.date.toLocaleDateString('es-PE',{day:'2-digit',month:'short',year:'numeric'})}
+      </div></div>`;
+  }).join('');
+}
+
+function renderProg() {
+  document.getElementById('PROGTBL').innerHTML = Object.keys(STD_NAMES).map(s => {
+    const rows = G.rows.filter(r => (r.std||'').includes(s));
+    const total = rows.length;
+    const avanz = rows.filter(r => ['En curso','Completado','Validado'].includes(est(r))).length;
+    const pct   = total ? Math.round(avanz/total*100) : 0;
+    const bc    = pct>=70?'var(--A)':pct>=40?'var(--B)':pct>=20?'var(--C)':'#ddd';
+    return `<div class="prog-row">
+      <div class="prog-std">${s}: ${STD_NAMES[s]}</div>
+      <div class="prog-bw"><div class="prog-b" style="width:${pct}%;background:${bc}"></div></div>
+      <div class="prog-pct">${avanz}/${total} (${pct}%)</div>
+    </div>`;
+  }).join('');
+}
+
+function renderPDCA() {
+  const by={P:0,H:0,V:0,A:0};
+  G.rows.forEach(r=>{ const p=r.pdca||'H'; if(by[p]!==undefined) by[p]++; });
+  const ctx = document.getElementById('PDCAch').getContext('2d');
+  if (pdcaChart) pdcaChart.destroy();
+  pdcaChart = new Chart(ctx,{type:'doughnut',
+    data:{labels:Object.values(PDCA_CFG).map(v=>v.label),
+          datasets:[{data:Object.keys(PDCA_CFG).map(k=>by[k]),
+                     backgroundColor:Object.values(PDCA_CFG).map(v=>v.color),
+                     borderWidth:0,hoverOffset:5}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'68%',
+             plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.label}: ${c.raw}`}}}}});
+  document.getElementById('PDCAleg').innerHTML = Object.keys(PDCA_CFG).map(k=>
+    `<div class="pdca-it"><div class="pdca-dot" style="background:${PDCA_CFG[k].color}"></div>
+     <div class="pdca-nm">${PDCA_CFG[k].label}</div><div class="pdca-ct">${by[k]}</div></div>`
+  ).join('');
+}
+
+function renderStdGrid() {
+  document.getElementById('STDGRID').innerHTML = Object.keys(STD_NAMES).map(s => {
+    const rows  = G.rows.filter(r => (r.std||'').includes(s));
+    const total = rows.length;
+    const comp  = rows.filter(r => ['Completado','Validado'].includes(est(r))).length;
+    const enc   = rows.filter(r => est(r)==='En curso').length;
+    const pct   = total ? Math.round((comp+enc)/total*100) : 0;
+    const bc    = pct>=70?'var(--A)':pct>=40?'var(--B)':pct>=20?'var(--C)':'#ddd';
+    const nivel = (comp+enc)/total>=0.7?'A':(comp+enc)/total>=0.4?'B':'C';
+    return `<div class="std-card" onclick="filterStd('${s}')">
+      <div class="std-n">${s}</div>
+      <div class="std-name">${STD_NAMES[s]}</div>
+      <span class="nbadge n${nivel}">${nivel}</span>
+      <div class="std-pb-l" style="margin-top:8px"><span>Avance</span><span>${comp+enc}/${total}</span></div>
+      <div class="std-pb-w"><div class="std-pb-f" style="width:${pct}%;background:${bc}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function filterStd(s) {
+  showPage('p2', document.querySelectorAll('.tab')[1]);
+  document.getElementById('FSTD').value = s; renderAct();
+}
+
+function renderStackChart() {
+  const stds    = Object.keys(STD_NAMES);
+  const estados = ['Crítico','Pendiente','En elaboración','En curso','Completado'];
+  const colors  = ['#c0392b','#d0d8e0','#e07b2a','#1d5fa8','#0e9e6e'];
+  const ctx = document.getElementById('STACKch').getContext('2d');
+  if (stackChart) stackChart.destroy();
+  stackChart = new Chart(ctx,{type:'bar',
+    data:{labels:stds, datasets:estados.map((e,i)=>({
+      label:e, backgroundColor:colors[i],
+      data:stds.map(s=>G.rows.filter(r=>(r.std||'').includes(s)&&est(r)===e).length)
+    }))},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{x:{stacked:true,ticks:{font:{size:11}}},y:{stacked:true,ticks:{stepSize:1,font:{size:11}}}},
+      plugins:{legend:{display:false}}}});
+  document.getElementById('STACKleg').innerHTML = estados.map((e,i)=>
+    `<span style="display:flex;align-items:center;gap:4px">
+      <span style="width:10px;height:10px;border-radius:2px;background:${colors[i]};flex-shrink:0"></span>${e}</span>`
+  ).join('');
+}
+
+function renderAct() {
+  const srch = (document.getElementById('FSRCH').value||'').toLowerCase();
+  const area = document.getElementById('FAREA').value;
+  const std  = document.getElementById('FSTD').value;
+  const est2 = document.getElementById('FEST').value;
+  let rows = G.rows;
+  if (srch) rows = rows.filter(r=>(r.texto||'').toLowerCase().includes(srch));
+  if (area) rows = rows.filter(r=>(r.area||'').includes(area.split('/')[0].trim()));
+  if (std)  rows = rows.filter(r=>(r.std||'').includes(std));
+  if (est2) rows = rows.filter(r=>est(r)===est2);
+  if (!rows.length) {
+    document.getElementById('ACTTBL').innerHTML =
+      '<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--ink-ghost)">Sin resultados con los filtros actuales</td></tr>';
+    document.getElementById('ACTCNT').textContent = '0 acciones';
+    return;
+  }
+  document.getElementById('ACTTBL').innerHTML = rows.map(r => {
+    const e=est(r), ec=EST_CLS[e]||'s-ni';
+    const aConf=AREA_CFG[r.area]||{bg:'#f0f3f6',col:'#444'};
+    return `<tr>
+      <td class="ev-id">${r.num||''}</td>
+      <td><span style="font-size:10px;padding:2px 7px;border-radius:20px;background:${aConf.bg};color:${aConf.col};font-weight:600;white-space:nowrap">${r.area||''}</span></td>
+      <td class="ev-txt">${r.texto||''}</td>
+      <td><span style="font-size:10px;font-family:'DM Mono',monospace;color:var(--acc);font-weight:600">${r.std||''}</span></td>
+      <td><span class="spill ${ec}">${e}</span></td>
+      <td style="font-size:11px;font-family:'DM Mono',monospace;color:var(--ink-soft);white-space:nowrap">${r.plazo||'—'}</td>
+      <td class="ev-ev">${r.evidencia||'—'}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('ACTCNT').textContent = `${rows.length} de ${G.rows.length} acciones`;
+}
+
+function renderAreaCards() {
+  document.getElementById('AREAGRID').innerHTML = Object.keys(AREA_CFG).map(a => {
+    const aRows = G.rows.filter(r=>r.area&&r.area.includes(a.split('/')[0]));
+    const total = aRows.length;
+    const comp  = aRows.filter(r=>['Completado','Validado'].includes(est(r))).length;
+    const enc   = aRows.filter(r=>est(r)==='En curso').length;
+    const crit  = aRows.filter(r=>est(r)==='Crítico').length;
+    const pct   = total ? Math.round((comp+enc)/total*100) : 0;
+    const cf    = AREA_CFG[a];
+    const ss    = [crit,aRows.filter(r=>est(r)==='Pendiente').length,
+                   aRows.filter(r=>est(r)==='En elaboración').length,enc,comp];
+    const scolors = ['#c0392b','#d0d8e0','#e07b2a','#1d5fa8','#0e9e6e'];
+    const sbb = total ? ss.map((n,i)=>
+      `<div class="sbb-s" style="width:${n/total*100}%;background:${scolors[i]}"></div>`).join('') : '';
+    return `<div class="ac">
+      <div class="ac-h">
+        <div class="ac-icon" style="background:${cf.bg}">${cf.icon}</div>
+        <div><div class="ac-title">${a}</div><div class="ac-sub">${total} acciones asignadas</div></div>
+      </div>
+      <div class="ac-stats">
+        <div class="ac-stat"><div class="ac-sl">Completadas</div><div class="ac-sv" style="color:var(--A)">${comp}</div></div>
+        <div class="ac-stat"><div class="ac-sl">En curso</div><div class="ac-sv" style="color:var(--B)">${enc}</div></div>
+        <div class="ac-stat"><div class="ac-sl">Críticos</div><div class="ac-sv" style="color:var(--D)">${crit}</div></div>
+      </div>
+      <div class="ac-pl"><span>Avance</span><span style="font-family:'DM Mono',monospace">${pct}%</span></div>
+      <div class="ac-pw"><div class="ac-pf" style="width:${pct}%;background:${pct>=70?'var(--A)':pct>=40?'var(--B)':'var(--C)'}"></div></div>
+      <div class="sbb">${sbb}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderAreaChart() {
+  const areas   = Object.keys(AREA_CFG);
+  const estados = ['Crítico','Pendiente','En elaboración','En curso','Completado'];
+  const colors  = ['#c0392b','#d0d8e0','#e07b2a','#1d5fa8','#0e9e6e'];
+  const short   = areas.map(a=>a.replace('Vicerrec.','VR.').replace('Rectorado/Gerencia','Rectorado'));
+  const ctx = document.getElementById('AREAch').getContext('2d');
+  if (areaChart) areaChart.destroy();
+  areaChart = new Chart(ctx,{type:'bar',
+    data:{labels:short, datasets:estados.map((e,i)=>({
+      label:e, backgroundColor:colors[i],
+      data:areas.map(a=>G.rows.filter(r=>r.area&&r.area.includes(a.split('/')[0])&&est(r)===e).length)
+    }))},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{x:{stacked:true,ticks:{font:{size:11}}},y:{stacked:true,ticks:{stepSize:1,font:{size:11}}}},
+      plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}}}});
+}
+
+function renderEvid() {
+  const fstd = document.getElementById('FEVSTD').value;
+  const evs  = fstd ? SOFIA_EV.filter(e=>e.std===fstd) : SOFIA_EV;
+  const byStd = {};
+  evs.forEach(e=>{ byStd[e.std]=byStd[e.std]||[]; byStd[e.std].push(e); });
+  document.getElementById('EVIDLIST').innerHTML = Object.keys(byStd).sort().map(s =>
+    `<div class="evid-std-title">${s} — ${STD_NAMES[s]||''}</div>` +
+    byStd[s].map(ev => {
+      const covered = ev.acc && ev.acc.length > 0;
+      const chk     = covered ? 'done' : '';
+      const chkTxt  = covered ? '✓' : '';
+      const crono   = covered ? ev.acc.map(n=>{
+        const a = G.rows.find(r=>r.num===n);
+        return a ? `Acción ${n}: ${(a.texto||'').substring(0,55)}...` : '';
+      }).filter(Boolean).join(' / ') : '';
+      return `<div class="evid-item">
+        <div class="evid-check ${chk}">${chkTxt}</div>
+        <div>
+          <div class="evid-txt">${ev.desc}</div>
+          ${covered
+            ? `<div class="evid-crono">→ ${crono}</div>`
+            : `<div class="evid-none">Sin acción asignada en el cronograma</div>`}
+        </div>
+      </div>`;
+    }).join('')
+  ).join('');
+}
+
+// ── Navegación ────────────────────────────────────────────────────────────
+function showPage(id, tab) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  if (tab) tab.classList.add('on');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('sofia_proxy_url');
+  if (saved) {
+    document.getElementById('SURL').value = saved;
+    G.proxyUrl = saved;
+    setDot('off','reconectando...');
+    fetchProxy(saved).catch(() => {
+      setDot('off','sin conexión — configura el proxy');
+      document.getElementById('OVL').style.display='flex';
+    });
+  }
+});
+</script>
+</body>
+</html>
