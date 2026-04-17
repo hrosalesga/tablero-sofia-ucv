@@ -49,7 +49,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);f
 .btn-p{width:100%;background:var(--acc);color:#fff;border:none;padding:11px;border-radius:var(--rs);font-size:14px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;transition:var(--tr);margin-bottom:8px}
 .btn-p:hover{background:#174f8f}
 .btn-p:disabled{opacity:.5;cursor:not-allowed}
-.btn-d{width:100%;background:transparent;color:var(--ink-soft);border:1.5px solid var(--ink-ghost);padding:9px;border-radius:var(--rs);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:var(--tr)}
+
 .btn-d:hover{border-color:var(--ink-mid);color:var(--ink-mid)}
 .err-box{background:var(--Dbg);color:var(--D);border-radius:var(--rs);padding:9px 12px;font-size:12px;margin-bottom:12px;display:none;line-height:1.6}
 .ok-box{background:var(--Abg);color:var(--A);border-radius:var(--rs);padding:9px 12px;font-size:12px;margin-bottom:12px;display:none}
@@ -168,36 +168,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);f
 </head>
 <body>
 
-<!-- SETUP OVERLAY -->
-<div class="overlay" id="OVL" style="display:none">
- <div class="setup-card">
-  <h2>Conectar con Google Sheets</h2>
-  <p>Este dashboard usa un <strong>Apps Script como proxy</strong> para leer el Sheet de forma segura, sin exponer credenciales. Sigue los pasos de configuración una sola vez.</p>
-
-  <div class="steps">
-    <div><span class="step-num">1</span><strong>Crea el script proxy:</strong> Ve a <code>script.google.com</code> → <strong>Nuevo proyecto</strong></div>
-    <div><span class="step-num">2</span>Borra el código que aparece y pega el contenido del archivo <code>apps_script_proxy.js</code></div>
-    <div><span class="step-num">3</span>En la línea 10, reemplaza <code>PEGA_AQUÍ_EL_ID_DE_TU_GOOGLE_SHEETS</code> con el ID real de tu Sheet</div>
-    <div><span class="step-num">4</span>Ejecuta primero la función <code>testProxy</code> para verificar que lee bien los datos</div>
-    <div><span class="step-num">5</span><strong>Implementar → Nueva implementación</strong> → Tipo: <strong>Aplicación web</strong></div>
-    <div><span class="step-num">6</span>Ejecutar como: <strong>Yo</strong> · Acceso: <strong>Cualquier persona</strong> → <strong>Implementar</strong></div>
-    <div><span class="step-num">7</span>Copia la <strong>URL de la aplicación web</strong> que aparece y pégala abajo</div>
-  </div>
-
-  <div class="err-box" id="ERR"></div>
-  <div class="ok-box" id="OK"></div>
-
-  <div class="ig">
-   <label>URL del Apps Script <span>(termina en /exec)</span></label>
-   <input type="text" id="SURL" placeholder="https://script.google.com/macros/s/AKfy.../exec"/>
-  </div>
-
-  <button class="btn-p" id="BTNCON" onclick="connectProxy()">Conectar y cargar datos</button>
-  <hr class="divider">
-  <button class="btn-d" onclick="loadDemo()">Ver con datos de demostración →</button>
- </div>
-</div>
-
 <!-- TOPBAR -->
 <div class="tb">
  <div class="tb-l">
@@ -209,7 +179,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);f
  </div>
  <div class="tb-r">
   <div class="sync"><div class="dot" id="DOT"></div><span id="SYNC">desconectado</span></div>
-  <button class="btn-sm" onclick="refresh()">↻ Actualizar</button>
  </div>
 </div>
 
@@ -413,39 +382,6 @@ const SOFIA_EV = [
   {std:'E10',desc:'Adecuación del plan de mejora con Agenda 2030',acc:[]},
 ];
 
-// ── CONEXIÓN PROXY ────────────────────────────────────────────────────────
-async function connectProxy() {
-  const url = document.getElementById('SURL').value.trim();
-  const err = document.getElementById('ERR');
-  const ok  = document.getElementById('OK');
-  const btn = document.getElementById('BTNCON');
-  err.style.display='none'; ok.style.display='none';
-
-  if (!url || !url.includes('script.google.com')) {
-    err.textContent = 'Pega una URL válida de Apps Script (debe contener script.google.com).';
-    err.style.display='block'; return;
-  }
-
-  btn.disabled=true; btn.textContent='Conectando...';
-  setDot('off','conectando...');
-
-  try {
-    await fetchProxy(url);
-    G.proxyUrl = url;
-    localStorage.setItem('sofia_proxy_url', url);
-    ok.textContent = '✓ Conectado correctamente. ' + G.rows.length + ' acciones cargadas.';
-    ok.style.display='block';
-    setTimeout(()=>{ document.getElementById('OVL').style.display='none'; }, 1200);
-  } catch(e) {
-    err.innerHTML = '<strong>Error al conectar:</strong> ' + e.message +
-      '<br><br>Verifica que:<br>· La URL termina en <code>/exec</code><br>· El script está implementado como "Aplicación web"<br>· El acceso es "Cualquier persona"<br>· Ejecutaste primero <code>testProxy()</code> sin errores';
-    err.style.display='block';
-    setDot('off','error de conexión');
-  } finally {
-    btn.disabled=false; btn.textContent='Conectar y cargar datos';
-  }
-}
-
 function fetchProxy(url) {
   return new Promise(function(resolve, reject) {
     var cbName = 'sofia_cb_' + Date.now();
@@ -481,24 +417,7 @@ function fetchProxy(url) {
   });
 }
 
-async function refresh() {
-  if (G.mode==='live' && G.proxyUrl) {
-    setDot('off','actualizando...');
-    try { await fetchProxy(G.proxyUrl); }
-    catch(e) { setDot('off','error al actualizar'); }
-  }
-}
 
-function loadDemo() {
-  G.rows = ACCIONES;
-  G.mode = 'demo';
-  G.lastSync = new Date();
-  setDot('demo', 'modo demo');
-  document.getElementById('LUP').textContent =
-    'Datos de demostración — cronograma v2 (82 acciones) · Conecta tu Google Sheets para datos reales';
-  document.getElementById('OVL').style.display = 'none';
-  renderAll();
-}
 
 function setDot(state, label) {
   const d = document.getElementById('DOT');
@@ -740,19 +659,21 @@ function showPage(id, tab) {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────
-window.addEventListener('load', () => {
-  const PROXY = 'https://script.google.com/a/macros/ucv.edu.pe/s/AKfycbxBBJnX_n_Xb67FUwXXaWGiF1DLJDCWSf91Vk70ttFhNQruXHzvw7zkfc04LEZ3-u8-3g/exec';
-  G.proxyUrl = PROXY;
+window.addEventListener('load', function() {
+  G.proxyUrl = 'https://script.google.com/a/macros/ucv.edu.pe/s/AKfycbxBBJnX_n_Xb67FUwXXaWGiF1DLJDCWSf91Vk70ttFhNQruXHzvw7zkfc04LEZ3-u8-3g/exec';
   setDot('off', 'conectando...');
   document.getElementById('LUP').textContent = 'Conectando con Google Sheets...';
-  fetchProxy(PROXY).catch(function() {
+  fetchProxy(G.proxyUrl).catch(function() {
     setDot('off', 'sin conexión');
-    document.getElementById('LUP').textContent = 'Error de conexión — reintentando en 30 segundos...';
+    document.getElementById('LUP').textContent = 'Sin conexión — reintentando...';
     setTimeout(function() {
-      fetchProxy(PROXY).catch(function() {
+      fetchProxy(G.proxyUrl).catch(function() {
         setDot('off', 'sin conexión');
-        document.getElementById('LUP').textContent = 'No se pudo conectar con Google Sheets. Verifica tu conexión a internet.';
+        document.getElementById('LUP').textContent = 'No se pudo conectar. Verifica tu conexión a internet.';
       });
+    }, 30000);
+  });
+});
     }, 30000);
   });
 });
