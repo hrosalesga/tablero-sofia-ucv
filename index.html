@@ -169,7 +169,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);f
 <body>
 
 <!-- SETUP OVERLAY -->
-<div class="overlay" id="OVL">
+<div class="overlay" id="OVL" style="display:none">
  <div class="setup-card">
   <h2>Conectar con Google Sheets</h2>
   <p>Este dashboard usa un <strong>Apps Script como proxy</strong> para leer el Sheet de forma segura, sin exponer credenciales. Sigue los pasos de configuración una sola vez.</p>
@@ -742,16 +742,15 @@ function showPage(id, tab) {
 
 // ── Init ──────────────────────────────────────────────────────────────────
 window.addEventListener('load', () => {
-  const saved = localStorage.getItem('sofia_proxy_url');
-  if (saved) {
-    document.getElementById('SURL').value = saved;
-    G.proxyUrl = saved;
-    setDot('off','reconectando...');
-    fetchProxy(saved).catch(() => {
-      setDot('off','sin conexión — configura el proxy');
-      document.getElementById('OVL').style.display='flex';
-    });
-  }
+  // URL del proxy precargada — no requiere configuración manual
+  const PROXY = 'https://script.google.com/a/macros/ucv.edu.pe/s/AKfycbxBBJnX_n_Xb67FUwXXaWGiF1DLJDCWSf91Vk70ttFhNQruXHzvw7zkfc04LEZ3-u8-3g/exec';
+  document.getElementById('SURL').value = PROXY;
+  G.proxyUrl = PROXY;
+  setDot('off','conectando...');
+  fetchProxy(PROXY).catch(() => {
+    // Si falla la conexión en vivo, carga datos demo automáticamente
+    loadDemo();
+  });
 });
 </script>
 </body>
