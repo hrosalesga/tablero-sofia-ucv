@@ -447,22 +447,35 @@ function renderKPIs() {
 
 function parseDate(str) {
   if (!str) return null;
+  // Intentar DD/MM/YYYY
   var p = str.split('/');
-  if (p.length === 3) return new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
-  return null;
+  if (p.length === 3) {
+    var d = new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
+    return isNaN(d.getTime()) ? null : d;
+  }
+  // Intentar formato ISO o cualquier otro que Date entienda
+  var d2 = new Date(str);
+  return isNaN(d2.getTime()) ? null : d2;
 }
+const DEFAULT_HITOS = [
+  {label:'Cierre abril',   date:new Date(2026,3,30),  color:'#c0392b'},
+  {label:'Visita INDIGO',  date:new Date(2026,5,8),   color:'#1d5fa8'},
+  {label:'Autoinforme',    date:new Date(2026,6,1),   color:'#0e9e6e'},
+  {label:'Panel SOFÍA',    date:new Date(2026,6,15),  color:'#5b21b6'},
+];
 function renderCounts() {
   const hoy = new Date(); hoy.setHours(0,0,0,0);
   const COLORS = ['#c0392b','#1d5fa8','#0e9e6e','#5b21b6'];
-  const DEFAULT = [
-    {label:'Cierre abril',   date:new Date(2026,3,30)},
-    {label:'Visita INDIGO',  date:new Date(2026,5,8)},
-    {label:'Autoinforme',    date:new Date(2026,6,1)},
-    {label:'Panel SOFÍA',    date:new Date(2026,6,15)},
-  ];
-  const hitos = (G.hitos && G.hitos.length >= 4)
-    ? G.hitos.map(function(h,i){ return {label:h.nombre, date:parseDate(h.fecha), color:COLORS[i]}; })
-    : DEFAULT.map(function(h,i){ return {label:h.label, date:h.date, color:COLORS[i]}; });
+  var hitos;
+  if (G.hitos && G.hitos.length >= 4) {
+    hitos = G.hitos.map(function(h,i){
+      var d = parseDate(h.fecha);
+      // Si la fecha no parsea, usar el default
+      return { label: h.nombre, date: d || DEFAULT_HITOS[i].date, color: COLORS[i] };
+    });
+  } else {
+    hitos = DEFAULT_HITOS;
+  }
   document.getElementById('COUNTS').innerHTML = hitos.map(h => {
     const d = Math.ceil((h.date - hoy) / 86400000);
     const disp = d < 0 ? `hace ${-d}d` : d === 0 ? 'hoy' : `${d}d`;
